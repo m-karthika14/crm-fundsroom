@@ -1,6 +1,9 @@
-// This file teaches TypeScript that an Express Request can carry a
-// "user" field. We set req.user inside the authenticate middleware,
-// then read it later in roleGuard and in controllers.
+// This file teaches TypeScript about extra fields our middleware puts
+// on the Express Request:
+// - req.user: set by authenticate, read by roleGuard and controllers.
+// - req.validatedQuery: set by validateQuery, holds the parsed query
+//   params (we don't overwrite req.query since some Express versions
+//   make it read-only).
 
 import { Role } from "@prisma/client";
 
@@ -11,6 +14,7 @@ declare global {
         id: string;
         role: Role;
       };
+      validatedQuery?: any;
     }
   }
 }

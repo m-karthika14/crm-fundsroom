@@ -6,6 +6,7 @@ import { json } from "express";
 import { env } from "./config/env";
 import { errorHandler } from "./middleware/errorHandler";
 import authRoutes from "./modules/auth/auth.routes";
+import customerRoutes from "./modules/customers/customer.routes";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
 // Each module gets its own mount point. As we build customers,
 // products, and challans, they'll each get a line like this one.
 app.use("/auth", authRoutes);
+app.use("/customers", customerRoutes);
 
 // Plug the central error handler last, so it can catch errors thrown
 // by any route registered above it.

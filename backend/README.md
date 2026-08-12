@@ -37,3 +37,28 @@ All 4 test users share the password: `Password123!`
 | Sales | sales@fundsroom.test |
 | Warehouse | warehouse@fundsroom.test |
 | Accounts | accounts@fundsroom.test |
+
+## Module 2: Customer CRM
+
+Endpoints (all require `Authorization: Bearer <token>`):
+- `GET /customers` -> list, query params `page`, `limit`, `q` (search name/mobile/businessName), `status`, `type`
+- `GET /customers/:id` -> customer + its notes
+- `POST /customers` -> create (Admin, Sales)
+- `PUT /customers/:id` -> partial update (Admin, Sales)
+- `POST /customers/:id/notes` -> add a note (Admin, Sales)
+
+## Design decisions / assumptions
+
+- **Mobile number uniqueness:** enforced strictly at the database level
+  (`@unique`). A duplicate mobile on create/update returns `409`. Chosen
+  over "warn-only" because two customer records sharing a phone number
+  is almost always a data-entry mistake, and catching it immediately is
+  more useful than a soft warning that's easy to ignore.
+- **Customer view access for Warehouse:** the plan's endpoint list
+  (Part D) marks `GET /customers` as "all roles", but the Role
+  Permissions Matrix (Part A.4) gives Warehouse a distinct "no access"
+  (❌) mark versus Accounts' "view only" mark for Customers CRUD -- a
+  distinction that only makes sense if Warehouse truly has zero access.
+  We followed the more specific matrix: `GET /customers` and
+  `GET /customers/:id` are open to Admin/Sales/Accounts only, not
+  Warehouse.

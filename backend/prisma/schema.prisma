@@ -28,16 +28,34 @@ model User {
   createdAt    DateTime @default(now())
 }
 
+// A customer is one of three business types.
+enum CustomerType {
+  RETAIL
+  WHOLESALE
+  DISTRIBUTOR
+}
+
+// Where a customer is in the sales pipeline. No strict state machine --
+// any status can move to any other status (see Part D of the plan).
+enum CustomerStatus {
+  LEAD
+  ACTIVE
+  INACTIVE
+}
+
 model Customer {
   id         String        @id @default(uuid())
   name       String
-  mobile     String
+  // Enforced unique at the DB level: two customer records sharing a
+  // mobile number is almost always a duplicate/data-entry mistake, and
+  // a clean 409 on creation is more useful than silently allowing it.
+  mobile     String        @unique
   email      String?
   businessName String?
   gstNumber  String?
-  type       String
+  type       CustomerType
   address    String
-  status     String      @default("LEAD")
+  status     CustomerStatus @default(LEAD)
   followUpDate DateTime?
   createdAt  DateTime    @default(now())
   notes      CustomerNote[]
