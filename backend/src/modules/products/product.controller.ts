@@ -67,3 +67,13 @@ export async function getStockHistoryHandler(req: Request, res: Response, next: 
     next(err);
   }
 }
+
+export async function imageUploadUrlHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { fileName, fileType } = req.body;
+    const result = await productService.generateImageUploadUrl(req.params.id, fileName, fileType);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}

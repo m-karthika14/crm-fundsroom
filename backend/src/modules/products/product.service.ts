@@ -3,7 +3,11 @@
 // result into an HTTP response -- no req/res objects touched here.
 
 import { Prisma, StockMovementType } from "@prisma/client";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { prisma } from "../../config/db";
+import { s3Client, publicUrlFor } from "../../config/s3";
+import { env } from "../../config/env";
 import { AppError } from "../../utils/AppError";
 
 interface ListProductsParams {
@@ -149,4 +153,30 @@ export async function getStockHistory(productId: string, page: number, limit: nu
   ]);
 
   return { data, total, page, totalPages: Math.ceil(total / limit) || 1 };
+}
+
+export async function generateImageUploadUrl(productId: string, fileName: string, fileType: string) {
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product) {
+    throw new AppError(404, "Product not found");
+  }
+
+  // Strip anything unsafe for a URL/S3 key, and prefix with a
+  // timestamp so re-uploading a file with the same name never
+  // collides with (or silently overwrites) a previous upload.
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const key = `products/${productId}/${Date.now()}-${safeFileName}`;
+
+  const command = new PutObjectCommand({
+    Bucket: env.AWS_BUCKET_NAME,
+    Key: key,
+    ContentType: fileType,
+  });
+
+  // The signed URL is only valid for 5 minutes -- plenty of time for
+  // the frontend to immediately PUT the file, but not something that
+  // should stay usable indefinitely.
+  const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+
+  return { uploadUrl, publicUrl: publicUrlFor(key) };
 }

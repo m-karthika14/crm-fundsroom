@@ -67,6 +67,19 @@ Endpoints (all require `Authorization: Bearer <token>`):
 - `POST /challans/:id/confirm` -> DRAFT -> CONFIRMED: re-checks live stock for every item in one transaction, deducts stock + logs an `OUT` movement per item, all-or-nothing (Admin, Sales)
 - `POST /challans/:id/cancel` -> DRAFT or CONFIRMED -> CANCELLED; if it was CONFIRMED, restores stock via a reversing `IN` movement per item (Admin, Sales)
 
+## Bonus: Product Image Upload (S3)
+
+Endpoint: `POST /products/:id/image-upload-url` -> `{ fileName, fileType }` returns `{ uploadUrl, publicUrl }` (Admin, Warehouse)
+
+Flow: frontend requests a signed URL -> uploads the file directly to S3 with a `PUT` to `uploadUrl` (bytes never pass through our server) -> frontend calls `PUT /products/:id` with `imageUrl: publicUrl` to save it.
+
+Requires three one-time settings on the S3 bucket (console, not code -- our IAM user is deliberately scoped to just `PutObject`/`GetObject`, not bucket administration):
+1. Block Public Access disabled for the bucket
+2. A bucket policy allowing public `s3:GetObject` scoped to the `products/*` prefix only (not the whole bucket)
+3. CORS allowing `PUT`/`GET` from the frontend's origin (needed because the browser uploads directly to S3, cross-origin)
+
+Verified end-to-end in a real browser: presigned URL requested, file `PUT` directly to S3, and the resulting public URL rendered in an `<img>` tag with a real network fetch (not mocked).
+
 ## Design decisions / assumptions
 
 - **Mobile number uniqueness:** enforced strictly at the database level
@@ -120,3 +133,10 @@ Endpoints (all require `Authorization: Bearer <token>`):
   replaced with fresh snapshots of the new list. Simpler and less
   error-prone than reconciling partial item diffs for a DRAFT that's
   still fully editable anyway.
+- **Product images are public-read, not signed-GET.** The plan (Part
+  E.1) explicitly allows either. Chose public read via a bucket policy
+  scoped to the `products/*` prefix: product photos aren't sensitive
+  data, and a plain public URL is simpler for the frontend (`<img src>`
+  with no signing/expiry to manage) and for any future integration that
+  wants to hotlink a product image. The rest of the bucket stays
+  private -- only that one prefix is public.

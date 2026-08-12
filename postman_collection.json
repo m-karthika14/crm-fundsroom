@@ -278,6 +278,24 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get Image Upload URL (bonus)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileName\": \"product-photo.png\",\n  \"fileType\": \"image/png\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/image-upload-url",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "image-upload-url"]
+            },
+            "description": "Returns { uploadUrl, publicUrl }. This request only generates the signed URL -- actually uploading a file to `uploadUrl` needs a real PUT with a binary body and matching Content-Type, which is easiest to do from the frontend or via curl rather than Postman's UI. Once uploaded, PUT /products/:id with { \"imageUrl\": publicUrl } to save it (see Update Product above)."
+          }
         }
       ]
     },

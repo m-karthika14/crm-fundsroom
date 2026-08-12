@@ -55,3 +55,12 @@ export const stockHistoryQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });
+
+// Rules for POST /products/:id/image-upload-url
+export const imageUploadUrlSchema = z.object({
+  fileName: z.string().trim().min(1, { message: "fileName is required" }),
+  fileType: z
+    .string()
+    .trim()
+    .regex(/^image\//, { message: "fileType must be an image MIME type, e.g. image/png" }),
+});

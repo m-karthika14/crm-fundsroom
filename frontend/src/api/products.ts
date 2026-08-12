@@ -58,3 +58,29 @@ export async function getStockHistory(
   const res = await apiClient.get<Paginated<StockMovement>>(`/products/${id}/stock-history`, { params });
   return res.data;
 }
+
+interface ImageUploadUrlResponse {
+  uploadUrl: string;
+  publicUrl: string;
+}
+
+export async function getImageUploadUrl(id: string, fileName: string, fileType: string): Promise<ImageUploadUrlResponse> {
+  const res = await apiClient.post<ImageUploadUrlResponse>(`/products/${id}/image-upload-url`, { fileName, fileType });
+  return res.data;
+}
+
+// Uploads straight to S3 using the pre-signed URL -- deliberately a
+// plain fetch, not apiClient, so our JWT interceptor doesn't attach an
+// Authorization header S3 was never asked to sign. The Content-Type
+// header here MUST match the fileType that was signed on the backend,
+// or S3 rejects the upload.
+export async function uploadImageToS3(uploadUrl: string, file: File): Promise<void> {
+  const res = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!res.ok) {
+    throw new Error(`Image upload to S3 failed (status ${res.status})`);
+  }
+}

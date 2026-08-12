@@ -17,6 +17,7 @@ import {
   updateProductHandler,
   createStockMovementHandler,
   getStockHistoryHandler,
+  imageUploadUrlHandler,
 } from "./product.controller";
 import { validateBody, validateQuery } from "../../middleware/validate";
 import {
@@ -25,6 +26,7 @@ import {
   listProductsQuerySchema,
   createStockMovementSchema,
   stockHistoryQuerySchema,
+  imageUploadUrlSchema,
 } from "./product.validation";
 import { authenticate } from "../../middleware/auth";
 import { authorize } from "../../middleware/roleGuard";
@@ -64,6 +66,13 @@ router.get(
   authorize("ADMIN", "WAREHOUSE", "ACCOUNTS"),
   validateQuery(stockHistoryQuerySchema),
   getStockHistoryHandler
+);
+
+router.post(
+  "/:id/image-upload-url",
+  authorize("ADMIN", "WAREHOUSE"),
+  validateBody(imageUploadUrlSchema),
+  imageUploadUrlHandler
 );
 
 export default router;

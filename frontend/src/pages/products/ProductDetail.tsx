@@ -8,7 +8,14 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getProduct, updateProduct, createStockMovement, getStockHistory } from "../../api/products";
+import {
+  getProduct,
+  updateProduct,
+  createStockMovement,
+  getStockHistory,
+  getImageUploadUrl,
+  uploadImageToS3,
+} from "../../api/products";
 import { getErrorMessage, getFieldErrors } from "../../api/client";
 import { formatCurrency, formatDate } from "../../lib/format";
 import type { Product, StockMovement, StockMovementType } from "../../types";
@@ -77,6 +84,8 @@ export function ProductDetail() {
           </>
         }
       />
+
+      <ImageSection product={product} canManage={canManage} onUploaded={reload} />
 
       <Card className="p-6">
         {isEditing ? (
@@ -198,6 +207,80 @@ function EditForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+function ImageSection({
+  product,
+  canManage,
+  onUploaded,
+}: {
+  product: Product;
+  canManage: boolean;
+  onUploaded: () => void;
+}) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file next time
+    if (!file) return;
+
+    setError(null);
+    setIsUploading(true);
+    try {
+      // 1. Ask the backend for a pre-signed S3 PUT URL.
+      const { uploadUrl, publicUrl } = await getImageUploadUrl(product.id, file.name, file.type);
+      // 2. Upload the file bytes straight to S3 -- never through our server.
+      await uploadImageToS3(uploadUrl, file);
+      // 3. Save the resulting public URL onto the product.
+      await updateProduct(product.id, { imageUrl: publicUrl });
+      onUploaded();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  if (!product.imageUrl && !canManage) return null;
+
+  return (
+    <Card className="p-6">
+      <h2 className="font-display text-lg font-medium text-ink">Image</h2>
+      {error && (
+        <div className="mt-3">
+          <ErrorBanner message={error} />
+        </div>
+      )}
+      <div className="mt-4 flex items-center gap-5">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="h-28 w-28 rounded-md border border-border object-cover"
+          />
+        ) : (
+          <div className="flex h-28 w-28 items-center justify-center rounded-md border border-dashed border-border text-xs text-ink-faint">
+            No image
+          </div>
+        )}
+        {canManage && (
+          <label>
+            <span className="sr-only">Upload product image</span>
+            <input
+              type="file"
+              accept="image/*"
+              disabled={isUploading}
+              onChange={handleFileChange}
+              className="text-sm text-ink-soft file:mr-3 file:rounded-md file:border file:border-border file:bg-paper-raised file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink hover:file:bg-paper disabled:opacity-60"
+            />
+            {isUploading && <p className="mt-1 text-xs text-ink-faint">Uploading…</p>}
+          </label>
+        )}
+      </div>
+    </Card>
   );
 }
 

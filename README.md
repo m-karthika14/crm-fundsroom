@@ -32,9 +32,9 @@ credentials for either.
 - **Database:** PostgreSQL, hosted on [Neon](https://neon.tech)
 - **Auth:** JWT (`jsonwebtoken`) + `bcrypt` password hashing
 - **Frontend:** React, Vite, TypeScript, Tailwind CSS v4, React Router, Axios
-- **File storage:** AWS S3 (pre-signed upload URLs) -- bonus feature
-- **PDF export:** `pdfkit` -- bonus feature
-- **CI:** GitHub Actions -- bonus feature
+- **File storage:** AWS S3, pre-signed upload URLs -- bonus feature, **done** (product images)
+- **PDF export:** `pdfkit` -- bonus feature, not started
+- **CI:** GitHub Actions -- bonus feature, not started
 
 ## Repo layout
 
@@ -160,10 +160,6 @@ Honest gaps, roughly in the order they'd get picked up:
   not a checked-in test suite. Given more time, this is the highest-value
   addition -- particularly around the Challan confirm/cancel transaction
   logic.
-- **S3 image upload isn't wired up yet.** AWS credentials are
-  configured and connectivity is verified (`PutObject`/`GetObject`
-  tested), but the pre-signed-upload-URL endpoint and the frontend
-  upload UI (Part E.1 of the plan) aren't built.
 - **PDF export isn't built yet** (Part F.1 -- `GET /challans/:id/pdf`).
 - **GitHub Actions CI isn't set up yet** (Part H.1).
 - **No rate limiting** on `/auth/login` -- fine for a demo, not for
