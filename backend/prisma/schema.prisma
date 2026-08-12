@@ -85,15 +85,21 @@ model Product {
   movements     StockMovement[]
 }
 
+// IN = stock coming in (restock), OUT = stock going out (sold/used).
+enum StockMovementType {
+  IN
+  OUT
+}
+
 model StockMovement {
-  id              String   @id @default(uuid())
-  product         Product  @relation(fields: [productId], references: [id])
+  id              String            @id @default(uuid())
+  product         Product           @relation(fields: [productId], references: [id])
   productId       String
   quantityChanged Int
-  type            String
+  type            StockMovementType
   reason          String
   createdBy       String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime          @default(now())
 }
 
 model Challan {

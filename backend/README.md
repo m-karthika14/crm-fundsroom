@@ -47,6 +47,16 @@ Endpoints (all require `Authorization: Bearer <token>`):
 - `PUT /customers/:id` -> partial update (Admin, Sales)
 - `POST /customers/:id/notes` -> add a note (Admin, Sales)
 
+## Module 3: Product & Inventory
+
+Endpoints (all require `Authorization: Bearer <token>`):
+- `GET /products` -> list, query params `page`, `limit`, `q` (search name/sku/category), `lowStock=true` (currentStock <= minStockAlert)
+- `GET /products/:id` -> single product
+- `POST /products` -> create (Admin, Warehouse)
+- `PUT /products/:id` -> partial update, any field EXCEPT `currentStock` (Admin, Warehouse) -- sending `currentStock` here is rejected with `400`
+- `POST /products/:id/stock-movement` -> `{ quantityChanged, type: "IN"|"OUT", reason }`, the only way stock changes (Admin, Warehouse)
+- `GET /products/:id/stock-history` -> paginated movement log, newest first (Admin, Warehouse, Accounts)
+
 ## Design decisions / assumptions
 
 - **Mobile number uniqueness:** enforced strictly at the database level
@@ -62,3 +72,19 @@ Endpoints (all require `Authorization: Bearer <token>`):
   We followed the more specific matrix: `GET /customers` and
   `GET /customers/:id` are open to Admin/Sales/Accounts only, not
   Warehouse.
+- **Blocking `currentStock` on `PUT /products/:id`:** the update schema
+  simply omits `currentStock` and is marked `.strict()`, so zod itself
+  rejects the request with `400` if it's present -- no special-case code
+  needed, and the rule is enforced the same way validation already works
+  everywhere else.
+- **Stock-history access for Sales:** similar reasoning to the Warehouse
+  case above -- the Role Matrix's "Stock movements" row gives Sales a
+  flat "no access" (❌), distinct from Accounts' "view only", so
+  `GET /products/:id/stock-history` excludes Sales even though general
+  product viewing (`GET /products`) does not.
+- **Low-stock filtering:** `currentStock <= minStockAlert` compares two
+  columns on the same row, which Prisma's query builder can't express
+  directly. Rather than hand-writing raw SQL, `lowStock=true` fetches
+  the (search-)filtered set and filters/paginates in application code.
+  Fine at this catalog size; would move to raw SQL or a generated column
+  if the product count grew large.
