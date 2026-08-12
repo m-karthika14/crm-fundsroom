@@ -1,0 +1,387 @@
+{
+  "info": {
+    "name": "Fundsroom CRM API",
+    "description": "Mini ERP + CRM Portal API. Run \"Login\" first (as Admin) -- it captures the JWT into the {{token}} collection variable that every other request uses automatically. \"Create Customer\", \"Create Product\", and \"Create Challan\" likewise capture the created record's id for the requests below them.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:4000" },
+    { "key": "token", "value": "" },
+    { "key": "customerId", "value": "" },
+    { "key": "productId", "value": "" },
+    { "key": "challanId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@fundsroom.test\",\n  \"password\": \"Password123!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login succeeded', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('token', body.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register (Admin-only)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New User\",\n  \"email\": \"new.user.{{$randomInt}}@fundsroom.test\",\n  \"password\": \"Password123!\",\n  \"role\": \"SALES\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "description": "Uses Postman's built-in {{$randomInt}} dynamic variable in the email so this is safe to run repeatedly without hitting the unique-email 409."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ravi Traders\",\n  \"mobile\": \"{{randomMobile}}\",\n  \"email\": \"ravi@example.com\",\n  \"businessName\": \"Ravi Traders Pvt Ltd\",\n  \"gstNumber\": \"29ABCDE1234F1Z5\",\n  \"type\": \"WHOLESALE\",\n  \"address\": \"MG Road, Bangalore\",\n  \"followUpDate\": \"2026-09-01\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/customers", "host": ["{{baseUrl}}"], "path": ["customers"] },
+            "description": "Mobile is unique per customer (see backend/README.md), so the pre-request script below generates a fresh one each run -- safe to run repeatedly."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.collectionVariables.set('randomMobile', '9' + Math.floor(100000000 + Math.random() * 899999999));"]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('customerId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "q", "value": "", "disabled": true, "description": "search name/mobile/businessName -- enable and fill in to use" },
+                { "key": "status", "value": "LEAD", "disabled": true, "description": "LEAD | ACTIVE | INACTIVE -- enable to filter (empty string fails validation, must be a real value or omitted)" },
+                { "key": "type", "value": "WHOLESALE", "disabled": true, "description": "RETAIL | WHOLESALE | DISTRIBUTOR -- enable to filter" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Customer",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\",\n  \"followUpDate\": \"2026-10-01\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          }
+        },
+        {
+          "name": "Add Customer Note",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Called and left a voicemail, will follow up next week.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}/notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}", "notes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Steel Pipe 2in\",\n  \"sku\": \"{{randomSku}}\",\n  \"category\": \"Pipes\",\n  \"unitPrice\": 250.5,\n  \"currentStock\": 100,\n  \"minStockAlert\": 10,\n  \"location\": \"Rack A1\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "description": "SKU is unique (409 on collision), so the pre-request script below generates a fresh one each run -- safe to run repeatedly."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": ["pm.collectionVariables.set('randomSku', 'SP-2IN-' + Date.now());"]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('productId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "q", "value": "", "disabled": true, "description": "search name/sku/category -- enable and fill in to use" },
+                { "key": "lowStock", "value": "true", "disabled": true, "description": "enable to see only currentStock <= minStockAlert" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Product",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unitPrice\": 275,\n  \"minStockAlert\": 15\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}"]
+            },
+            "description": "currentStock is deliberately NOT accepted here -- it can only change via the Stock Movement endpoint below, so every change is logged. Sending it returns 400."
+          }
+        },
+        {
+          "name": "Record Stock Movement",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantityChanged\": 20,\n  \"type\": \"IN\",\n  \"reason\": \"Restock from supplier\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/stock-movement",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "stock-movement"]
+            }
+          }
+        },
+        {
+          "name": "Get Stock History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products/{{productId}}/stock-history?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "{{productId}}", "stock-history"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Challans",
+      "item": [
+        {
+          "name": "Create Challan (Draft)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 2 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/challans", "host": ["{{baseUrl}}"], "path": ["challans"] },
+            "description": "Run Create Customer and Create Product first so {{customerId}} and {{productId}} are populated."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('challanId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Challans",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/challans?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "status", "value": "DRAFT", "disabled": true, "description": "DRAFT | CONFIRMED | CANCELLED -- enable to filter" },
+                { "key": "customerId", "value": "{{customerId}}", "disabled": true, "description": "enable to filter by customer" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Challan",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Challan (Draft only)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 3 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}"]
+            },
+            "description": "Returns 409 if the challan is no longer DRAFT. Sending \"items\" fully replaces the existing item list."
+          }
+        },
+        {
+          "name": "Confirm Challan",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/confirm",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "confirm"]
+            },
+            "description": "DRAFT -> CONFIRMED. Re-checks live stock for every item inside one transaction; if any item is short, returns 400 with { error: \"Insufficient stock\", details: [{ productId, productName, available, requested }] } and deducts nothing."
+          }
+        },
+        {
+          "name": "Cancel Challan",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "cancel"]
+            },
+            "description": "Allowed from DRAFT or CONFIRMED. If it was CONFIRMED, restores stock via a reversing IN movement per item."
+          }
+        }
+      ]
+    }
+  ]
+}
