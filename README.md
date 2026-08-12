@@ -32,7 +32,7 @@ credentials for either.
 - **Database:** PostgreSQL, hosted on [Neon](https://neon.tech)
 - **Auth:** JWT (`jsonwebtoken`) + `bcrypt` password hashing
 - **Frontend:** React, Vite, TypeScript, Tailwind CSS v4, React Router, Axios
-- **File storage:** AWS S3, pre-signed upload URLs -- bonus feature, **done** (product images)
+- **File storage:** AWS S3, pre-signed upload URLs (product images)
 - **PDF export:** `pdfkit` -- (challan detail page)
 - **CI:** GitHub Actions -- not started
 
