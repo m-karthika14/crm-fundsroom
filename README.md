@@ -2,7 +2,7 @@
 
 A small but real ERP/CRM: customer pipeline, product inventory with a
 full audit trail of every stock change, and sales challans (dispatch
-notes) with transactional stock deduction and historical snapshots.
+notes) with transactional stock deduction.
 
 
 ## Architecture
