@@ -8,17 +8,17 @@ notes) with transactional stock deduction and historical snapshots.
 ## Architecture
 
 ```
-┌─────────────────┐        HTTPS/JSON        ┌──────────────────┐         ┌──────────────┐
-│   Frontend       │ ───────────────────────▶ │   Backend         │ ──────▶ │   Postgres    │
-│  React + Vite    │ ◀─────────────────────── │  Express + Prisma │         │   (Neon)      │
-│  (Vercel)         │      JWT in header        │  (Render)          │         │              │
-└─────────────────┘                          └────────┬─────────┘         └──────────────┘
+┌─────────────────┐        HTTPS/JSON          ┌──────────────────┐         ┌──────────────┐
+│   Frontend      │ ───────────────────────▶  │   Backend         │ ──────▶│   Postgres   │
+│  React + Vite   │ ◀───────────────────────  │  Express + Prisma │         │   (Neon)    │
+│  (Vercel)       │      JWT in header         │  (Render)        │         │              │
+└─────────────────┘                            └────────┬─────────┘         └──────────────┘
                                                         │
                                                         ▼
                                                 ┌──────────────┐
-                                                │   AWS S3      │
-                                                │ (product      │
-                                                │  images)      │
+                                                │   AWS S3     │
+                                                │ (product     │
+                                                │  images)     │
                                                 └──────────────┘
 ```
 
@@ -33,8 +33,8 @@ credentials for either.
 - **Auth:** JWT (`jsonwebtoken`) + `bcrypt` password hashing
 - **Frontend:** React, Vite, TypeScript, Tailwind CSS v4, React Router, Axios
 - **File storage:** AWS S3, pre-signed upload URLs -- bonus feature, **done** (product images)
-- **PDF export:** `pdfkit` -- bonus feature, **done** (challan detail page)
-- **CI:** GitHub Actions -- bonus feature, not started
+- **PDF export:** `pdfkit` -- (challan detail page)
+- **CI:** GitHub Actions -- not started
 
 ## Repo layout
 
