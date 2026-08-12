@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { createProduct } from "../../api/products";
+import { createProduct, updateProduct, getImageUploadUrl, uploadImageToS3 } from "../../api/products";
 import { getErrorMessage, getFieldErrors } from "../../api/client";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Card } from "../../components/ui/Card";
@@ -19,6 +19,7 @@ export function ProductForm() {
   const [currentStock, setCurrentStock] = useState("0");
   const [minStockAlert, setMinStockAlert] = useState("0");
   const [location, setLocation] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -39,6 +40,24 @@ export function ProductForm() {
         minStockAlert: Number(minStockAlert),
         location,
       });
+
+      // The image-upload-url endpoint needs an existing product id (the
+      // S3 key is products/{productId}/{fileName}), so if an image was
+      // picked, it uploads right after creation succeeds -- same
+      // presign -> direct-to-S3 -> save-imageUrl flow as the detail
+      // page. A failed image upload doesn't block navigation; the
+      // product was already created and the image can be added later
+      // from its detail page.
+      if (imageFile) {
+        try {
+          const { uploadUrl, publicUrl } = await getImageUploadUrl(product.id, imageFile.name, imageFile.type);
+          await uploadImageToS3(uploadUrl, imageFile);
+          await updateProduct(product.id, { imageUrl: publicUrl });
+        } catch (imageErr) {
+          console.error("Image upload failed:", imageErr);
+        }
+      }
+
       navigate(`/products/${product.id}`);
     } catch (err) {
       setFormError(getErrorMessage(err));
@@ -132,6 +151,16 @@ export function ProductForm() {
               />
             </Field>
           </div>
+
+          <Field label="Product image" htmlFor="image" error={fieldErrors.imageUrl}>
+            <input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              className="text-sm text-ink-soft file:mr-3 file:rounded-md file:border file:border-border file:bg-paper-raised file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink hover:file:bg-paper"
+            />
+          </Field>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => navigate("/products")}>
