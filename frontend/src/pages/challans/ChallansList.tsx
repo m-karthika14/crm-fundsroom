@@ -99,9 +99,17 @@ export function ChallansList() {
             </THead>
             <tbody>
               {challans.map((c) => (
-                <TR key={c.id} className="hover:bg-ink/[0.02]">
+                <TR
+                  key={c.id}
+                  className="cursor-pointer hover:bg-ink/[0.02]"
+                  onClick={() => navigate(`/challans/${c.id}`)}
+                >
                   <TD>
-                    <Link to={`/challans/${c.id}`} className="font-tabular font-medium text-ink hover:text-forest-600">
+                    <Link
+                      to={`/challans/${c.id}`}
+                      className="font-tabular font-medium text-ink hover:text-forest-600"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {c.challanNumber}
                     </Link>
                   </TD>

@@ -136,9 +136,20 @@ export function CustomersList() {
             </THead>
             <tbody>
               {customers.map((c) => (
-                <TR key={c.id} className="cursor-pointer hover:bg-ink/[0.02]">
+                <TR
+                  key={c.id}
+                  className="cursor-pointer hover:bg-ink/[0.02]"
+                  onClick={() => navigate(`/customers/${c.id}`)}
+                >
                   <TD>
-                    <Link to={`/customers/${c.id}`} className="font-medium text-ink hover:text-forest-600">
+                    {/* Link stays for accessibility (keyboard nav, middle-click to
+                        open in a new tab) -- the row's onClick above is what actually
+                        makes the whole row clickable, not just this name text. */}
+                    <Link
+                      to={`/customers/${c.id}`}
+                      className="font-medium text-ink hover:text-forest-600"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {c.name}
                     </Link>
                   </TD>

@@ -123,9 +123,17 @@ export function ProductsList() {
               {products.map((p) => {
                 const isLow = p.currentStock <= p.minStockAlert;
                 return (
-                  <TR key={p.id} className="hover:bg-ink/[0.02]">
+                  <TR
+                    key={p.id}
+                    className="cursor-pointer hover:bg-ink/[0.02]"
+                    onClick={() => navigate(`/products/${p.id}`)}
+                  >
                     <TD>
-                      <Link to={`/products/${p.id}`} className="font-medium text-ink hover:text-forest-600">
+                      <Link
+                        to={`/products/${p.id}`}
+                        className="font-medium text-ink hover:text-forest-600"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {p.name}
                       </Link>
                     </TD>
