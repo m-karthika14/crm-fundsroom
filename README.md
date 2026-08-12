@@ -137,9 +137,7 @@ After running `npm run seed`, all 4 users share the password `Password123!`:
 | Warehouse | warehouse@fundsroom.test | Products (full) incl. stock movements, Challans (view only), no Customers access |
 | Accounts | accounts@fundsroom.test | View-only across Customers/Products/Challans, can view stock history |
 
-Full role matrix in `ERP_CRM_Complete_Master_Plan.md` Part A.4, with the
-edge cases (Warehouse/Customers, Sales/stock-movements) documented in
-`backend/README.md`.
+
 
 ## API docs
 
