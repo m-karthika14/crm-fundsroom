@@ -1,0 +1,102 @@
+// Prisma schema for fundsroom-crm
+// Models follow the project master plan; comments kept plain and friendly.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// The 4 roles a user can have. Using a real enum (instead of a plain
+// string) means Postgres itself rejects any typo'd or unknown role.
+enum Role {
+  ADMIN
+  SALES
+  WAREHOUSE
+  ACCOUNTS
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+}
+
+model Customer {
+  id         String        @id @default(uuid())
+  name       String
+  mobile     String
+  email      String?
+  businessName String?
+  gstNumber  String?
+  type       String
+  address    String
+  status     String      @default("LEAD")
+  followUpDate DateTime?
+  createdAt  DateTime    @default(now())
+  notes      CustomerNote[]
+  challans   Challan[]
+}
+
+model CustomerNote {
+  id         String   @id @default(uuid())
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId String
+  note       String
+  createdBy  String
+  createdAt  DateTime @default(now())
+}
+
+model Product {
+  id            String         @id @default(uuid())
+  name          String
+  sku           String         @unique
+  category      String
+  unitPrice     Decimal
+  currentStock  Int            @default(0)
+  minStockAlert Int            @default(0)
+  location      String?
+  imageUrl      String?
+  createdAt     DateTime       @default(now())
+  movements     StockMovement[]
+}
+
+model StockMovement {
+  id              String   @id @default(uuid())
+  product         Product  @relation(fields: [productId], references: [id])
+  productId       String
+  quantityChanged Int
+  type            String
+  reason          String
+  createdBy       String
+  createdAt       DateTime @default(now())
+}
+
+model Challan {
+  id            String        @id @default(uuid())
+  challanNumber String        @unique
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  customerId    String
+  totalQuantity Int
+  status        String        @default("DRAFT")
+  createdBy     String
+  createdAt     DateTime      @default(now())
+  items         ChallanItem[]
+}
+
+model ChallanItem {
+  id                String   @id @default(uuid())
+  challan           Challan  @relation(fields: [challanId], references: [id])
+  challanId         String
+  productId         String
+  productNameSnapshot String
+  productSkuSnapshot  String
+  unitPriceSnapshot  Decimal
+  quantity          Int
+}
