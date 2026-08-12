@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getChallan, updateChallan, confirmChallan, cancelChallan } from "../../api/challans";
+import { getChallan, updateChallan, confirmChallan, cancelChallan, downloadChallanPdf } from "../../api/challans";
 import { getErrorMessage, getInsufficientStockDetails } from "../../api/client";
 import { formatCurrency, formatDate } from "../../lib/format";
 import type { Challan, Customer } from "../../types";
@@ -22,16 +22,22 @@ import { ItemsEditor } from "../../components/challans/ItemsEditor";
 import type { DraftItem } from "../../components/challans/ItemsEditor";
 
 const CAN_MANAGE = ["ADMIN", "SALES"];
+// Matches the plan's Role Matrix (Part A.4) "Download challan PDF" row:
+// Admin/Sales/Accounts can, Warehouse can't -- same pattern as
+// everywhere else Warehouse is excluded from Challans.
+const CAN_DOWNLOAD_PDF = ["ADMIN", "SALES", "ACCOUNTS"];
 
 export function ChallanDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const canManage = !!user && CAN_MANAGE.includes(user.role);
+  const canDownloadPdf = !!user && CAN_DOWNLOAD_PDF.includes(user.role);
 
   const [challan, setChallan] = useState<Challan | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [insufficientStock, setInsufficientStock] = useState<ReturnType<typeof getInsufficientStockDetails>>([]);
   const [isActing, setIsActing] = useState(false);
 
@@ -78,6 +84,19 @@ export function ChallanDetail() {
     }
   }
 
+  async function handleDownloadPdf() {
+    if (!id || !challan) return;
+    setError(null);
+    setIsDownloading(true);
+    try {
+      await downloadChallanPdf(id, challan.challanNumber);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
   if (error && !challan) return <ErrorBanner message={error} />;
   if (!challan) return <PageSpinner />;
 
@@ -113,6 +132,11 @@ export function ChallanDetail() {
             {canManage && (isDraft || isConfirmed) && !isEditing && (
               <Button variant="danger" size="sm" isLoading={isActing} onClick={handleCancel}>
                 Cancel Challan
+              </Button>
+            )}
+            {canDownloadPdf && !isEditing && (
+              <Button variant="secondary" size="sm" isLoading={isDownloading} onClick={handleDownloadPdf}>
+                Download PDF
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={() => navigate("/challans")}>

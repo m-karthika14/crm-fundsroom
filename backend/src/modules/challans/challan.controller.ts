@@ -3,6 +3,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import * as challanService from "./challan.service";
+import { streamChallanPdf } from "./challan.pdf";
 
 export async function listChallansHandler(req: Request, res: Response, next: NextFunction) {
   try {
@@ -55,6 +56,14 @@ export async function cancelChallanHandler(req: Request, res: Response, next: Ne
   try {
     const challan = await challanService.cancelChallan(req.params.id, req.user!.id);
     res.status(200).json(challan);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function downloadChallanPdfHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    await streamChallanPdf(req.params.id, res);
   } catch (err) {
     next(err);
   }

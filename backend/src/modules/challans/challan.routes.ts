@@ -15,6 +15,7 @@ import {
   updateChallanHandler,
   confirmChallanHandler,
   cancelChallanHandler,
+  downloadChallanPdfHandler,
 } from "./challan.controller";
 import { validateBody, validateQuery } from "../../middleware/validate";
 import { createChallanSchema, updateChallanSchema, listChallansQuerySchema } from "./challan.validation";
@@ -47,5 +48,10 @@ router.put(
 router.post("/:id/confirm", authorize("ADMIN", "SALES"), confirmChallanHandler);
 
 router.post("/:id/cancel", authorize("ADMIN", "SALES"), cancelChallanHandler);
+
+// PDF download follows its own role list from the plan's matrix
+// (Admin/Sales/Accounts) -- Warehouse is excluded here too, same as
+// everywhere else in this module.
+router.get("/:id/pdf", authorize("ADMIN", "SALES", "ACCOUNTS"), downloadChallanPdfHandler);
 
 export default router;

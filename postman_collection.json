@@ -398,6 +398,18 @@
             },
             "description": "Allowed from DRAFT or CONFIRMED. If it was CONFIRMED, restores stock via a reversing IN movement per item."
           }
+        },
+        {
+          "name": "Download Challan PDF (bonus)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/challans/{{challanId}}/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["challans", "{{challanId}}", "pdf"]
+            },
+            "description": "Streams a PDF (Content-Type: application/pdf). In Postman, use \"Send and Download\" (the dropdown next to Send) to save the file instead of viewing raw bytes in the response pane."
+          }
         }
       ]
     }

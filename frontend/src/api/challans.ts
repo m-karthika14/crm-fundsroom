@@ -45,3 +45,21 @@ export async function cancelChallan(id: string): Promise<Challan> {
   const res = await apiClient.post<Challan>(`/challans/${id}/cancel`);
   return res.data;
 }
+
+// Downloads and saves the PDF locally. A plain <a href> to the API
+// wouldn't work here -- our auth is a JWT header, not a cookie, so the
+// browser would hit the endpoint unauthenticated. Fetching through
+// apiClient (which attaches the header) as a blob, then triggering a
+// save via a throwaway <a download>, gets the same "click and it
+// downloads" result while keeping the request authenticated.
+export async function downloadChallanPdf(id: string, challanNumber: string): Promise<void> {
+  const res = await apiClient.get(`/challans/${id}/pdf`, { responseType: "blob" });
+  const url = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${challanNumber}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}

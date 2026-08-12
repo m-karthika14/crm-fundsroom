@@ -80,6 +80,14 @@ Requires three one-time settings on the S3 bucket (console, not code -- our IAM 
 
 Verified end-to-end in a real browser: presigned URL requested, file `PUT` directly to S3, and the resulting public URL rendered in an `<img>` tag with a real network fetch (not mocked).
 
+## Bonus: Export Challan as PDF
+
+Endpoint: `GET /challans/:id/pdf` (Admin, Sales, Accounts -- Warehouse excluded, same as everywhere else in this module) -> streams a PDF directly in the response (`Content-Type: application/pdf`, `Content-Disposition: attachment; filename="CH-2026-0001.pdf"`).
+
+Built with `pdfkit`. Content: company header, challan number/date/status, customer details, an itemized table (product, SKU, unit price, quantity, subtotal) built from the same snapshot data shown on the challan detail page, grand total, and a created-by/date footer.
+
+Frontend note: the download button doesn't use a plain `<a href>` to the API -- auth here is a JWT header, not a cookie, so a bare link would hit the endpoint unauthenticated and get a `401`. Instead it fetches the PDF as a blob through the authenticated API client, then triggers a save via a throwaway `<a download>` pointed at an object URL.
+
 ## Design decisions / assumptions
 
 - **Mobile number uniqueness:** enforced strictly at the database level

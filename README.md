@@ -33,7 +33,7 @@ credentials for either.
 - **Auth:** JWT (`jsonwebtoken`) + `bcrypt` password hashing
 - **Frontend:** React, Vite, TypeScript, Tailwind CSS v4, React Router, Axios
 - **File storage:** AWS S3, pre-signed upload URLs -- bonus feature, **done** (product images)
-- **PDF export:** `pdfkit` -- bonus feature, not started
+- **PDF export:** `pdfkit` -- bonus feature, **done** (challan detail page)
 - **CI:** GitHub Actions -- bonus feature, not started
 
 ## Repo layout
@@ -160,7 +160,6 @@ Honest gaps, roughly in the order they'd get picked up:
   not a checked-in test suite. Given more time, this is the highest-value
   addition -- particularly around the Challan confirm/cancel transaction
   logic.
-- **PDF export isn't built yet** (Part F.1 -- `GET /challans/:id/pdf`).
 - **GitHub Actions CI isn't set up yet** (Part H.1).
 - **No rate limiting** on `/auth/login` -- fine for a demo, not for
   production.
