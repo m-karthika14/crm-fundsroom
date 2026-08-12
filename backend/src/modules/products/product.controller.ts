@@ -22,6 +22,15 @@ export async function getProductHandler(req: Request, res: Response, next: NextF
   }
 }
 
+export async function getFieldSuggestionsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await productService.getFieldSuggestions();
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function createProductHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const product = await productService.createProduct(req.body);

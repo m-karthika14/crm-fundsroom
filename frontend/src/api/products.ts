@@ -18,6 +18,19 @@ export async function getProduct(id: string): Promise<Product> {
   return res.data;
 }
 
+interface FieldSuggestions {
+  categories: string[];
+  locations: string[];
+}
+
+// Distinct category/location values already used across existing
+// products, for autocomplete -- keeps free-text fields from drifting
+// into inconsistent spellings across products.
+export async function getFieldSuggestions(): Promise<FieldSuggestions> {
+  const res = await apiClient.get<FieldSuggestions>("/products/field-suggestions");
+  return res.data;
+}
+
 export interface ProductInput {
   name: string;
   sku: string;

@@ -63,6 +63,30 @@ export async function getProductById(id: string) {
   return product;
 }
 
+// Distinct category/location values already in use, for autocomplete
+// on the product create forms -- keeps free-text fields from drifting
+// into inconsistent spellings ("Pipes" vs "pipe") across products.
+export async function getFieldSuggestions() {
+  const [categories, locations] = await Promise.all([
+    prisma.product.findMany({
+      distinct: ["category"],
+      select: { category: true },
+      orderBy: { category: "asc" },
+    }),
+    prisma.product.findMany({
+      distinct: ["location"],
+      select: { location: true },
+      where: { location: { not: null } },
+      orderBy: { location: "asc" },
+    }),
+  ]);
+
+  return {
+    categories: categories.map((c) => c.category),
+    locations: locations.map((l) => l.location as string),
+  };
+}
+
 // Prisma throws this specific error (code P2002) when a @unique column
 // is violated -- turn it into our API's standard 409 shape.
 function rethrowAsConflictIfDuplicateSku(err: unknown): never {

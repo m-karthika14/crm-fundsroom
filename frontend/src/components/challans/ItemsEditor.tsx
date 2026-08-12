@@ -10,10 +10,10 @@
 // in the app (Products CRUD is Admin/Warehouse only), so letting them
 // create one here would be a quiet exception to that rule.
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { listProducts, createProduct } from "../../api/products";
+import { listProducts, createProduct, getFieldSuggestions } from "../../api/products";
 import { getErrorMessage, getFieldErrors } from "../../api/client";
 import { formatCurrency } from "../../lib/format";
 import type { Product } from "../../types";
@@ -169,6 +169,24 @@ function NewProductForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Existing category/location values, so typing here suggests only
+  // what's already in the database instead of inviting a fresh spelling
+  // of something that already exists.
+  const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getFieldSuggestions().then((res) => {
+      if (cancelled) return;
+      setCategorySuggestions(res.categories);
+      setLocationSuggestions(res.locations);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -207,7 +225,19 @@ function NewProductForm({
           <input id="np-sku" required value={sku} onChange={(e) => setSku(e.target.value)} className={inputClasses(!!fieldErrors.sku) + " font-tabular"} />
         </Field>
         <Field label="Category" htmlFor="np-category" error={fieldErrors.category}>
-          <input id="np-category" required value={category} onChange={(e) => setCategory(e.target.value)} className={inputClasses(!!fieldErrors.category)} />
+          <input
+            id="np-category"
+            required
+            list="np-category-options"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className={inputClasses(!!fieldErrors.category)}
+          />
+          <datalist id="np-category-options">
+            {categorySuggestions.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
         </Field>
         <Field label="Unit price" htmlFor="np-price" error={fieldErrors.unitPrice}>
           <input
@@ -222,7 +252,19 @@ function NewProductForm({
           />
         </Field>
         <Field label="Location" htmlFor="np-location" error={fieldErrors.location}>
-          <input id="np-location" required value={location} onChange={(e) => setLocation(e.target.value)} className={inputClasses(!!fieldErrors.location)} />
+          <input
+            id="np-location"
+            required
+            list="np-location-options"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className={inputClasses(!!fieldErrors.location)}
+          />
+          <datalist id="np-location-options">
+            {locationSuggestions.map((l) => (
+              <option key={l} value={l} />
+            ))}
+          </datalist>
         </Field>
       </div>
       <div className="mt-3 flex justify-end gap-2">

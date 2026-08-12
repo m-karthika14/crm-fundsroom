@@ -13,6 +13,7 @@ import { Router } from "express";
 import {
   listProductsHandler,
   getProductHandler,
+  getFieldSuggestionsHandler,
   createProductHandler,
   updateProductHandler,
   createStockMovementHandler,
@@ -37,6 +38,11 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/", validateQuery(listProductsQuerySchema), listProductsHandler);
+
+// Must be registered before "/:id" -- otherwise Express would match
+// this path as a request for the product whose id is literally
+// "field-suggestions".
+router.get("/field-suggestions", getFieldSuggestionsHandler);
 
 router.get("/:id", getProductHandler);
 
