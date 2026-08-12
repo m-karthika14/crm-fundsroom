@@ -32,9 +32,25 @@ credentials for either.
 - **Database:** PostgreSQL, hosted on [Neon](https://neon.tech)
 - **Auth:** JWT (`jsonwebtoken`) + `bcrypt` password hashing
 - **Frontend:** React, Vite, TypeScript, Tailwind CSS v4, React Router, Axios
-- **File storage:** AWS S3, pre-signed upload URLs -- bonus feature, **done** (product images)
+- **File storage:** AWS S3, pre-signed upload URLs(product images)
 - **PDF export:** `pdfkit` -- bonus feature, **done** (challan detail page)
-- **CI:** GitHub Actions -- bonus feature, not started
+
+## Screenshots
+
+**Challan PDF, stored in S3**
+![Challan PDF stored in S3](frontend/public/challan.png)
+
+**Database (Neon)**
+![Neon database](frontend/public/database.png)
+
+**Backend deployed on Render**
+![Render deployment](frontend/public/render.png)
+
+**S3 bucket**
+![S3 bucket](frontend/public/s3%20bucket.png)
+
+**Frontend deployed on Vercel**
+![Vercel deployment](frontend/public/vercel.png)
 
 ## Repo layout
 

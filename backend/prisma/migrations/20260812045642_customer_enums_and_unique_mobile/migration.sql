@@ -1,3 +1,4 @@
+
 -- CreateEnum
 CREATE TYPE "CustomerType" AS ENUM ('RETAIL', 'WHOLESALE', 'DISTRIBUTOR');
 
