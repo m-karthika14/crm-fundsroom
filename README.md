@@ -3,7 +3,7 @@
 A small but real ERP/CRM: customer pipeline, product inventory with a
 full audit trail of every stock change, and sales challans (dispatch
 notes) with transactional stock deduction and historical snapshots.
-Built to the spec in [`ERP_CRM_Complete_Master_Plan.md`](ERP_CRM_Complete_Master_Plan.md).
+
 
 ## Architecture
 
@@ -104,18 +104,27 @@ deployment -- never commit them).
 
 ## Deployment
 
-1. **Neon** (done): create a project, copy the connection string into
-   `DATABASE_URL`, run `npx prisma migrate deploy` against it.
-2. **Render (backend):** New Web Service → connect this repo → root
-   directory `backend` → build command `npm run build` → start command
-   `npm start` → set all the `backend/.env` variables above (with
-   `FRONTEND_URL` pointed at the deployed Vercel URL) as environment
-   variables in the Render dashboard.
-3. **Vercel (frontend):** import this repo → root directory `frontend`
-   → set `VITE_API_URL` to the deployed Render URL → deploy.
-4. Click-test both live URLs end-to-end before calling it done.
+Live:
+- **Frontend:** https://crm-fundsroom-omega.vercel.app
+- **Backend:** https://crm-fundsroom.onrender.com
 
-Steps 2-3 are not done yet -- see "Known limitations" below.
+Steps taken:
+1. **Neon:** created a project, copied the connection string into
+   `DATABASE_URL`, ran `npx prisma migrate deploy` against it.
+2. **Render (backend):** New Web Service → connected this repo → root
+   directory `backend` → build command `npm install && npm run build`
+   → start command `npm start` → set all the `backend/.env` variables
+   above (with `FRONTEND_URL` pointed at the Vercel URL) as environment
+   variables in the Render dashboard.
+3. **Vercel (frontend):** imported this repo → root directory
+   `frontend` → framework preset **Vite** → set `VITE_API_URL` to the
+   Render URL → deployed.
+4. Click-tested both live URLs end-to-end (login, CRUD, challan
+   confirm/cancel, image upload, PDF export) before calling it done.
+
+Note: Render's free tier spins the backend down after inactivity, so
+the first request after a period of no traffic can take ~30-50s to
+wake it back up -- expected, not a bug.
 
 ## Test credentials
 
@@ -150,9 +159,6 @@ Run Login first (as Admin, to unlock every endpoint including
 
 Honest gaps, roughly in the order they'd get picked up:
 
-- **Not deployed yet.** Neon is live; Render (backend) and Vercel
-  (frontend) haven't been set up. Deployment steps above are ready to
-  follow.
 - **No automated test suite.** Every business rule (transactional
   stock deduction, insufficient-stock rejection, snapshot immutability,
   concurrent challan-number generation, role restrictions) was verified
