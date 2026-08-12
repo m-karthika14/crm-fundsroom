@@ -125,7 +125,11 @@ export async function createStockMovement(
     });
 
     return { product: updatedProduct, movement };
-  });
+  },
+  // Neon is remote and under load a request may queue for a pooled
+  // connection -- give both more room than the defaults (see the
+  // longer explanation in challan.service.ts).
+  { timeout: 15000, maxWait: 10000 });
 }
 
 export async function getStockHistory(productId: string, page: number, limit: number) {

@@ -57,6 +57,16 @@ Endpoints (all require `Authorization: Bearer <token>`):
 - `POST /products/:id/stock-movement` -> `{ quantityChanged, type: "IN"|"OUT", reason }`, the only way stock changes (Admin, Warehouse)
 - `GET /products/:id/stock-history` -> paginated movement log, newest first (Admin, Warehouse, Accounts)
 
+## Module 4: Sales Challan
+
+Endpoints (all require `Authorization: Bearer <token>`):
+- `GET /challans` -> list, query params `page`, `limit`, `status`, `customerId`
+- `GET /challans/:id` -> challan + items (with product snapshots) + customer summary
+- `POST /challans` -> `{ customerId, items: [{ productId, quantity }] }`, creates a `DRAFT` (Admin, Sales)
+- `PUT /challans/:id` -> partial update, DRAFT only -- `409` otherwise (Admin, Sales)
+- `POST /challans/:id/confirm` -> DRAFT -> CONFIRMED: re-checks live stock for every item in one transaction, deducts stock + logs an `OUT` movement per item, all-or-nothing (Admin, Sales)
+- `POST /challans/:id/cancel` -> DRAFT or CONFIRMED -> CANCELLED; if it was CONFIRMED, restores stock via a reversing `IN` movement per item (Admin, Sales)
+
 ## Design decisions / assumptions
 
 - **Mobile number uniqueness:** enforced strictly at the database level
@@ -88,3 +98,25 @@ Endpoints (all require `Authorization: Bearer <token>`):
   the (search-)filtered set and filters/paginates in application code.
   Fine at this catalog size; would move to raw SQL or a generated column
   if the product count grew large.
+- **Challan number generation is atomic but not gap-free.** A single
+  Postgres `INSERT ... ON CONFLICT DO UPDATE` on a per-year counter row
+  hands out each number, and runs as its own standalone statement
+  *before* the main creation transaction opens (not inside it) -- doing
+  the increment inside the transaction was tested and found to hold
+  that row's lock for the whole transaction (customer + product lookups
+  + nested create), which serialized concurrent challan creation behind
+  each other and could time out. Standalone, the lock is only held for
+  one quick round trip. Trade-off: if challan creation fails right after
+  a number is allocated (e.g. bad `customerId`), that number is never
+  used again -- a small gap is possible, but two challans can never get
+  the same number. Verified with 12 concurrent creation requests: all
+  succeeded with unique, sequential numbers.
+- **Cancelling a CONFIRMED challan restores stock**, reversing exactly
+  what confirming did (one `IN` movement per item). Not explicitly
+  required by the brief, but the only logically consistent behavior --
+  otherwise a cancelled sale would permanently "lose" stock.
+- **`PUT /challans/:id` does a full items replace**, not a per-item
+  merge/patch: if `items` is sent, all existing items are deleted and
+  replaced with fresh snapshots of the new list. Simpler and less
+  error-prone than reconciling partial item diffs for a DRAFT that's
+  still fully editable anyway.

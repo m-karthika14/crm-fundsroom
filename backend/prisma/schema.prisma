@@ -83,6 +83,7 @@ model Product {
   imageUrl      String?
   createdAt     DateTime       @default(now())
   movements     StockMovement[]
+  challanItems  ChallanItem[]
 }
 
 // IN = stock coming in (restock), OUT = stock going out (sold/used).
@@ -102,13 +103,22 @@ model StockMovement {
   createdAt       DateTime          @default(now())
 }
 
+// DRAFT: freely editable, stock untouched.
+// CONFIRMED: stock has been deducted, items are locked.
+// CANCELLED: end state; if it was CONFIRMED, stock was restored.
+enum ChallanStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
 model Challan {
   id            String        @id @default(uuid())
   challanNumber String        @unique
   customer      Customer      @relation(fields: [customerId], references: [id])
   customerId    String
   totalQuantity Int
-  status        String        @default("DRAFT")
+  status        ChallanStatus @default(DRAFT)
   createdBy     String
   createdAt     DateTime      @default(now())
   items         ChallanItem[]
@@ -118,9 +128,23 @@ model ChallanItem {
   id                String   @id @default(uuid())
   challan           Challan  @relation(fields: [challanId], references: [id])
   challanId         String
+  product           Product  @relation(fields: [productId], references: [id])
   productId         String
+  // Snapshots of the product AT THE TIME the challan item was created.
+  // If the product's real name/sku/price changes later, this challan
+  // must still show what was true when the sale happened -- that's the
+  // whole point of copying these fields instead of joining live.
   productNameSnapshot String
   productSkuSnapshot  String
   unitPriceSnapshot  Decimal
   quantity          Int
+}
+
+// Backs atomic, per-year challan number generation (CH-2026-0001, ...).
+// One row per year; "lastNumber" is incremented with a single atomic
+// SQL UPSERT so two simultaneous challan creations can never collide,
+// even under concurrent requests.
+model ChallanCounter {
+  year       Int @id
+  lastNumber Int @default(0)
 }

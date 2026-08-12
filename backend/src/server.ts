@@ -8,6 +8,7 @@ import { errorHandler } from "./middleware/errorHandler";
 import authRoutes from "./modules/auth/auth.routes";
 import customerRoutes from "./modules/customers/customer.routes";
 import productRoutes from "./modules/products/product.routes";
+import challanRoutes from "./modules/challans/challan.routes";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/customers", customerRoutes);
 app.use("/products", productRoutes);
+app.use("/challans", challanRoutes);
 
 // Plug the central error handler last, so it can catch errors thrown
 // by any route registered above it.
