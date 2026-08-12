@@ -2,15 +2,27 @@
 // see a running total. Shared between the challan create page and the
 // draft-edit mode on the detail page -- both need exactly this same
 // "build up a list of {product, quantity}" interaction.
+//
+// Admin can also create a brand-new product inline here (via "+ New
+// Product") if the one they need doesn't exist in the catalog yet --
+// see the NewProductForm below. This is deliberately Admin-only:
+// Sales can create challans but can't create products anywhere else
+// in the app (Products CRUD is Admin/Warehouse only), so letting them
+// create one here would be a quiet exception to that rule.
 
-import { useCallback } from "react";
-import { listProducts } from "../../api/products";
+import { useCallback, useState } from "react";
+import type { FormEvent } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { listProducts, createProduct } from "../../api/products";
+import { getErrorMessage, getFieldErrors } from "../../api/client";
 import { formatCurrency } from "../../lib/format";
 import type { Product } from "../../types";
 import { Card } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { Field, inputClasses } from "../ui/Field";
 import { SearchSelect } from "../ui/SearchSelect";
 import { Table, THead, TH, TR, TD } from "../ui/Table";
-import { EmptyState } from "../ui/Feedback";
+import { EmptyState, ErrorBanner } from "../ui/Feedback";
 
 export interface DraftItem {
   product: Product;
@@ -22,7 +34,13 @@ interface ItemsEditorProps {
   onChange: (items: DraftItem[]) => void;
 }
 
+const CAN_CREATE_PRODUCT = ["ADMIN"];
+
 export function ItemsEditor({ items, onChange }: ItemsEditorProps) {
+  const { user } = useAuth();
+  const canCreateProduct = !!user && CAN_CREATE_PRODUCT.includes(user.role);
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+
   const searchProducts = useCallback((q: string) => listProducts({ q, limit: 8 }).then((res) => res.data), []);
 
   function addProduct(product: Product) {
@@ -47,15 +65,33 @@ export function ItemsEditor({ items, onChange }: ItemsEditorProps) {
   return (
     <Card className="p-6">
       <h2 className="font-display text-lg font-medium text-ink">Items</h2>
-      <div className="mt-3 max-w-md">
-        <SearchSelect
-          placeholder="Search products by name or SKU..."
-          searchFn={searchProducts}
-          getLabel={(p: Product) => p.name}
-          getSubLabel={(p: Product) => `${p.sku} · ${formatCurrency(p.unitPrice)} · ${p.currentStock} in stock`}
-          onSelect={addProduct}
-        />
+
+      <div className="mt-3 flex items-start gap-3">
+        <div className="max-w-md flex-1">
+          <SearchSelect
+            placeholder="Search products by name or SKU..."
+            searchFn={searchProducts}
+            getLabel={(p: Product) => p.name}
+            getSubLabel={(p: Product) => `${p.sku} · ${formatCurrency(p.unitPrice)} · ${p.currentStock} in stock`}
+            onSelect={addProduct}
+          />
+        </div>
+        {canCreateProduct && !isCreatingProduct && (
+          <Button type="button" variant="secondary" size="sm" onClick={() => setIsCreatingProduct(true)}>
+            + New Product
+          </Button>
+        )}
       </div>
+
+      {isCreatingProduct && (
+        <NewProductForm
+          onCancel={() => setIsCreatingProduct(false)}
+          onCreated={(product) => {
+            addProduct(product);
+            setIsCreatingProduct(false);
+          }}
+        />
+      )}
 
       <div className="mt-5">
         {items.length === 0 && <EmptyState title="No items yet" hint="Search above to add products." />}
@@ -110,5 +146,93 @@ export function ItemsEditor({ items, onChange }: ItemsEditorProps) {
         </div>
       )}
     </Card>
+  );
+}
+
+// Same required fields as the standalone Product create page (Name,
+// SKU, Category, Unit price, Location) -- just embedded inline so
+// Admin doesn't have to leave the challan to add a missing product.
+function NewProductForm({
+  onCancel,
+  onCreated,
+}: {
+  onCancel: () => void;
+  onCreated: (product: Product) => void;
+}) {
+  const [name, setName] = useState("");
+  const [sku, setSku] = useState("");
+  const [category, setCategory] = useState("");
+  const [unitPrice, setUnitPrice] = useState("");
+  const [location, setLocation] = useState("");
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setFormError(null);
+    setFieldErrors({});
+    setIsSubmitting(true);
+    try {
+      const product = await createProduct({
+        name,
+        sku,
+        category,
+        unitPrice: Number(unitPrice),
+        location,
+      });
+      onCreated(product);
+    } catch (err) {
+      setFormError(getErrorMessage(err));
+      setFieldErrors(getFieldErrors(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-4 rounded-md border border-border bg-paper p-4">
+      <p className="text-sm font-medium text-ink-soft">New product</p>
+      {formError && (
+        <div className="mt-2">
+          <ErrorBanner message={formError} />
+        </div>
+      )}
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <Field label="Name" htmlFor="np-name" error={fieldErrors.name}>
+          <input id="np-name" required value={name} onChange={(e) => setName(e.target.value)} className={inputClasses(!!fieldErrors.name)} />
+        </Field>
+        <Field label="SKU" htmlFor="np-sku" error={fieldErrors.sku}>
+          <input id="np-sku" required value={sku} onChange={(e) => setSku(e.target.value)} className={inputClasses(!!fieldErrors.sku) + " font-tabular"} />
+        </Field>
+        <Field label="Category" htmlFor="np-category" error={fieldErrors.category}>
+          <input id="np-category" required value={category} onChange={(e) => setCategory(e.target.value)} className={inputClasses(!!fieldErrors.category)} />
+        </Field>
+        <Field label="Unit price" htmlFor="np-price" error={fieldErrors.unitPrice}>
+          <input
+            id="np-price"
+            type="number"
+            min="0.01"
+            step="0.01"
+            required
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value)}
+            className={inputClasses(!!fieldErrors.unitPrice) + " font-tabular"}
+          />
+        </Field>
+        <Field label="Location" htmlFor="np-location" error={fieldErrors.location}>
+          <input id="np-location" required value={location} onChange={(e) => setLocation(e.target.value)} className={inputClasses(!!fieldErrors.location)} />
+        </Field>
+      </div>
+      <div className="mt-3 flex justify-end gap-2">
+        <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" isLoading={isSubmitting}>
+          Create &amp; add
+        </Button>
+      </div>
+    </form>
   );
 }
