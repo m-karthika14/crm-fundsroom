@@ -3,6 +3,7 @@
 
 import express from "express";
 import { json } from "express";
+import cors from "cors";
 import { env } from "./config/env";
 import { errorHandler } from "./middleware/errorHandler";
 import authRoutes from "./modules/auth/auth.routes";
@@ -11,6 +12,11 @@ import productRoutes from "./modules/products/product.routes";
 import challanRoutes from "./modules/challans/challan.routes";
 
 const app = express();
+
+// The frontend runs on a different origin (different port in dev,
+// different domain in production), so the browser blocks its requests
+// unless we explicitly allow that origin here.
+app.use(cors({ origin: env.FRONTEND_URL }));
 
 // Parse JSON bodies (this is needed to read request bodies)
 app.use(json());

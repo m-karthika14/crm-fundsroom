@@ -4,7 +4,7 @@ Simple backend scaffold for Fundsroom CRM.
 
 Quick start (developer):
 
-1. Copy `.env.example` to `.env` and set `DATABASE_URL` and `JWT_SECRET`.
+1. Copy `.env.example` to `.env` and set `DATABASE_URL` and `JWT_SECRET`. `FRONTEND_URL` defaults to `http://localhost:5173` (the frontend's dev port) and only needs changing for production.
 2. Install dependencies in `backend` folder: `npm install`.
 3. Create the database tables: `npx prisma migrate dev --name init`.
 4. Seed 4 test users (one per role): `npm run seed`.
